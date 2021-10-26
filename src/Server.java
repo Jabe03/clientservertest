@@ -92,11 +92,9 @@ public class Server implements Closeable {
         Thread t = new Thread(new Runnable() {
             @Override
             public void run() {
-                if(packets == null) packets = new PriorityQueue<String>() ;
+                if (packets == null) packets = new PriorityQueue<String>();
                 while (running) {
-                    for(String p : packets) {
-
-                    }
+                    packets.poll();
                 }
             }
         });
