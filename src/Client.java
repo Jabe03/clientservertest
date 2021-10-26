@@ -10,7 +10,7 @@ public class Client {
         Scanner sc = new Scanner(System.in);
         System.out.println("What is the IP?");
         String addr = sc.nextLine();
-        System.out.println("Whats is the port?");
+        //System.out.println("Whats is the port?");
         int port = sc.nextInt();
         Client c = new Client(addr, port);
 
@@ -23,7 +23,6 @@ public class Client {
     public Client(String address, int port) throws IOException {
         establishConnection(address, port);
         sendMessage("Josh");
-
 
     }
 
