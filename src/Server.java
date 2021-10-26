@@ -44,20 +44,20 @@ public class Server implements Closeable {
         System.out.println("running");
         ss = new ServerSocket(port);
         running = true;
-        Thread t = new Thread(new Runnable(){
+        Thread t = new Thread(new Runnable() {
             @Override
-            public void run(){
+            public void run() {
                 System.out.println("RUNning");
-                while(running){
-                    try{
-                    sr = ss.accept();
-                    System.out.println("accepted");
-                    byte[] b = new byte[1000];
-                    sr.getInputStream().read(b, 0 , b.length);
-                    String name = new String(b);
-                    addClient(new RemoteClient(name, sr));
-                    System.out.println(clients.get(clients.size()-1));
-                    } catch(IOException e){
+                while (running) {
+                    try {
+                        sr = ss.accept();
+                        System.out.println("accepted");
+                        byte[] b = new byte[1000];
+                        sr.getInputStream().read(b, 0, b.length);
+                        String name = new String(b);
+                        addClient(new RemoteClient(name, sr));
+                        System.out.println(clients.get(clients.size() - 1));
+                    } catch (IOException e) {
                         e.printStackTrace();
                     }
 
@@ -77,5 +77,20 @@ public class Server implements Closeable {
         os.write(b, 0, b.length);
         fr.close();
 
+    }
+
+    public byte[] truncate(byte[] og) {
+        int finalIndex = 0;
+        for (int i = 0; i < og.length; i++) {
+            if (og[i] == 0) {
+                finalIndex = i;
+            }
+        }
+
+        byte[] res = new byte[finalIndex];
+        for (int i = 0; i < finalIndex; i++) {
+            res[i] = og[i];
+        }
+        return res;
     }
 }
