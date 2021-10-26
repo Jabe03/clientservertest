@@ -23,9 +23,14 @@ public class Client {
     public Client(String address, int port) throws IOException {
         establishConnection(address, port);
         sendMessage("Josh");
-
+        startRuntimeChat();
     }
-
+    public void startRuntimeChat()throws IOException{
+        Scanner tsm = new Scanner(System.in);
+        while(true){
+            sendMessage(tsm.nextLine());
+        }
+    }
     public boolean establishConnection(String address, int port) throws IOException {
         sr = new Socket(address, port);
         is = sr.getInputStream();

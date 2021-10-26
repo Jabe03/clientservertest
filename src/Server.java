@@ -7,24 +7,34 @@ import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.PriorityQueue;
+import java.util.Queue;
+import java.util.Scanner;
 
 public class Server implements Closeable {
 
     private boolean running;
 
     public static void main(String[] args) throws Exception {
-        Server s = new Server(5555);
+        Server s = Server.getInstance();
     }
 
     ServerSocket ss;
     Socket sr;
     OutputStream os;
     InputStream is;
+    static Server instance;
     private ArrayList<RemoteClient> clients;
+    PriorityQueue<String> packets;
 
-    public Server(int port) throws IOException {
+    private Server(int port) throws IOException {
         getConnection(port);
-
+        instance = this;
+    }
+    private Server()throws  IOException{
+        Scanner tsm = new Scanner(System.in);
+        System.out.println("What port?");
+        getConnection(tsm.nextInt());
     }
 
     public void addClient(RemoteClient c) {
@@ -32,7 +42,16 @@ public class Server implements Closeable {
             clients = new ArrayList<RemoteClient>();
         clients.add(c);
     }
-
+    public static Server getInstance(){
+        if(instance == null){
+            try {
+                instance = new Server();
+            } catch(IOException e){
+                e.printStackTrace();
+            }
+        }
+        return instance;
+    }
     @Override
     public void close() throws IOException {
         os.close();
@@ -54,7 +73,7 @@ public class Server implements Closeable {
                         System.out.println("accepted");
                         byte[] b = new byte[1000];
                         sr.getInputStream().read(b, 0, b.length);
-                        String name = new String(b);
+                        String name = new String(truncate(b));
                         addClient(new RemoteClient(name, sr));
                         System.out.println(clients.get(clients.size() - 1));
                     } catch (IOException e) {
@@ -69,7 +88,20 @@ public class Server implements Closeable {
         t.setName("ConnectionSearching");
         t.start();
     }
+    public void startProcessing(){
+        Thread t = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                if(packets == null) packets = new PriorityQueue<String>() ;
+                while (running) {
+                    for(String p : packets) {
 
+                    }
+                }
+            }
+        });
+        t.setName("ServerProcess");
+    }
     public void sendFile(String fileName) throws Exception {
         FileInputStream fr = new FileInputStream(fileName);
         byte[] b = new byte[(int) new File(fileName).length()];
@@ -79,11 +111,12 @@ public class Server implements Closeable {
 
     }
 
-    public byte[] truncate(byte[] og) {
+    public static byte[] truncate(byte[] og) {
         int finalIndex = 0;
         for (int i = 0; i < og.length; i++) {
             if (og[i] == 0) {
                 finalIndex = i;
+                break;
             }
         }
 
