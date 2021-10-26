@@ -10,6 +10,8 @@ import java.util.ArrayList;
 
 public class Server implements Closeable {
 
+    private boolean running;
+
     public static void main(String[] args) throws Exception {
         Server s = new Server(5555);
     }
@@ -22,8 +24,6 @@ public class Server implements Closeable {
 
     public Server(int port) throws IOException {
         getConnection(port);
-        os = sr.getOutputStream();
-        is = sr.getInputStream();
 
     }
 
@@ -41,8 +41,33 @@ public class Server implements Closeable {
     }
 
     public void getConnection(int port) throws IOException {
-        ss = new ServerSocket(5555);
-        sr = ss.accept();
+        System.out.println("running");
+        ss = new ServerSocket(port);
+        running = true;
+        Thread t = new Thread(new Runnable(){
+            @Override
+            public void run(){
+                System.out.println("RUNning");
+                while(running){
+                    try{
+                    sr = ss.accept();
+                    System.out.println("accepted");
+                    byte[] b = new byte[1000];
+                    sr.getInputStream().read(b, 0 , b.length);
+                    String name = new String(b);
+                    addClient(new RemoteClient(name, sr));
+                    System.out.println(clients.get(clients.size()-1));
+                    } catch(IOException e){
+                        e.printStackTrace();
+                    }
+
+                }
+                System.out.println("Done");
+            }
+
+        });
+        t.setName("ConnectionSearching");
+        t.start();
     }
 
     public void sendFile(String fileName) throws Exception {

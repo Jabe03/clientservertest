@@ -22,14 +22,8 @@ public class Client {
 
     public Client(String address, int port) throws IOException {
         establishConnection(address, port);
-        FileOutputStream fr = new FileOutputStream("lib\\tasks\\test.txt", true);
-        byte[] b = new byte[2002];
-        int bytesRead = is.read(b, 0, b.length);
-        System.out.println(bytesRead);
-        fr.write(b, 0, bytesRead);
-        // System.out.pritnln("done");
-        sr.close();
-        fr.close();
+        sendMessage("Josh");
+
 
     }
 
