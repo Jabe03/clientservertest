@@ -11,7 +11,6 @@ public class RemoteClient {
     Socket s;
     InputStream in;
     OutputStream out;
-
     boolean running;
 
     public RemoteClient(String name, Socket s) {
@@ -24,6 +23,7 @@ public class RemoteClient {
         } catch(IOException e){
             e.printStackTrace();
         }
+        listenForInputs();
     }
 
     public void listenForInputs(){
@@ -35,13 +35,17 @@ public class RemoteClient {
                     try {
                         byte[] b = new byte[2000];
                         in.read(b);
-                        Server.getInstance().packets.add(new String(Server.truncate(b)));
+                        String msg =new String(Server.truncate(b));
+                        msg = "%"+id.toString() +"%" + msg;
+                        Server.getInstance().addPacket(msg);
                     } catch(IOException e){
                         e.printStackTrace();
                     }
                 }
             }
         });
+        t.setName("client " + this.name + " listener");
+        t.start();
     }
 
     @Override

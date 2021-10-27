@@ -16,7 +16,7 @@ public class Server implements Closeable {
     private boolean running;
 
     public static void main(String[] args) throws Exception {
-        Server s = Server.getInstance();
+        new Server();
     }
 
     ServerSocket ss;
@@ -25,31 +25,41 @@ public class Server implements Closeable {
     InputStream is;
     static Server instance;
     private ArrayList<RemoteClient> clients;
-    PriorityQueue<String> packets;
+    ArrayList<String> packets;
 
     private Server(int port) throws IOException {
         getConnection(port);
         instance = this;
     }
     private Server()throws  IOException{
-        Scanner tsm = new Scanner(System.in);
-        System.out.println("What port?");
-        getConnection(tsm.nextInt());
-    }
+        instance = this;
+        //Scanner tsm = new Scanner(System.in);
+        //System.out.println("What port?");
+        packets = new ArrayList<String>();
+        getConnection(5555);
+        //startProcessing();
 
+
+        Server.getInstance().addPacket("starting 40");
+        System.out.println(this);
+    }
+    public void addPacket(String p){
+        packets.add(p);
+        System.out.println(packets);
+    }
     public void addClient(RemoteClient c) {
         if (clients == null)
             clients = new ArrayList<RemoteClient>();
         clients.add(c);
     }
     public static Server getInstance(){
-        if(instance == null){
-            try {
-                instance = new Server();
-            } catch(IOException e){
-                e.printStackTrace();
-            }
-        }
+//        if(instance == null){
+//            try {
+//                instance = new Server();
+//            } catch(IOException e){
+//                e.printStackTrace();
+//            }
+//        }
         return instance;
     }
     @Override
@@ -60,13 +70,13 @@ public class Server implements Closeable {
     }
 
     public void getConnection(int port) throws IOException {
-        System.out.println("running");
+        //System.out.println("running");
         ss = new ServerSocket(port);
         running = true;
         Thread t = new Thread(new Runnable() {
             @Override
             public void run() {
-                System.out.println("RUNning");
+                //System.out.println("RUNning");
                 while (running) {
                     try {
                         sr = ss.accept();
@@ -76,6 +86,9 @@ public class Server implements Closeable {
                         String name = new String(truncate(b));
                         addClient(new RemoteClient(name, sr));
                         System.out.println(clients.get(clients.size() - 1));
+                        startProcessing();
+                        packets.add("Starting char");
+
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
@@ -89,23 +102,42 @@ public class Server implements Closeable {
         t.start();
     }
     public void startProcessing(){
+
+
         Thread t = new Thread(new Runnable() {
             @Override
             public void run() {
-                if (packets == null) packets = new PriorityQueue<String>();
-                while (running) {
-                    packets.poll();
+                while (true) {
+                    try {
+                        Thread.sleep(20);
+                    } catch(InterruptedException e){
+                        e.printStackTrace();
+                    }
+                    processPackets();
                 }
             }
         });
         t.setName("ServerProcess");
+        t.start();
+    }
+
+    private void processPackets(){
+                while (!packets.isEmpty()) {
+                    //action here
+                    packets.remove(0);
+                }
+
+
+    }
+    private ArrayList<String> getPackets(){
+        return packets;
     }
     public void sendFile(String fileName) throws Exception {
         FileInputStream fr = new FileInputStream(fileName);
         byte[] b = new byte[(int) new File(fileName).length()];
         fr.read(b);
         os.write(b, 0, b.length);
-        fr.close();
+        //fr.close();
 
     }
 
