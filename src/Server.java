@@ -33,10 +33,10 @@ public class Server implements Closeable {
     }
     private Server()throws  IOException{
         instance = this;
-        //Scanner tsm = new Scanner(System.in);
-        //System.out.println("What port?");
+        Scanner tsm = new Scanner(System.in);
+        System.out.println("What port?");
         packets = new ArrayList<String>();
-        getConnection(5555);
+        getConnection(tsm.nextInt());
         //startProcessing();
 
 
@@ -123,7 +123,7 @@ public class Server implements Closeable {
 
     private void processPackets(){
                 while (!packets.isEmpty()) {
-                    //action here
+                    System.out.println(packets.get(0));
                     packets.remove(0);
                 }
 

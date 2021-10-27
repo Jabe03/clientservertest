@@ -10,7 +10,7 @@ public class Client {
         Scanner sc = new Scanner(System.in);
         System.out.println("What is the IP?");
         String addr = sc.nextLine();
-        //System.out.println("Whats is the port?");
+        System.out.println("Whats is the port?");
         int port = sc.nextInt();
         Client c = new Client(addr, port);
 
@@ -26,10 +26,22 @@ public class Client {
         startRuntimeChat();
     }
     public void startRuntimeChat()throws IOException{
-        Scanner tsm = new Scanner(System.in);
-        while(true){
-            sendMessage(tsm.nextLine());
-        }
+        Thread t = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                System.out.println("Send a message!");
+                Scanner tsm = new Scanner(System.in);
+                while(true){
+                    try {
+                        sendMessage(tsm.nextLine());
+                    } catch(IOException e){
+                        e.printStackTrace();
+                    }
+                }
+            }
+        });
+        t.setName("Chat listener");
+        t.start();
     }
     public boolean establishConnection(String address, int port) throws IOException {
         sr = new Socket(address, port);
@@ -41,6 +53,7 @@ public class Client {
     public void sendMessage(String msg) throws IOException {
         byte[] b = msg.getBytes();
         os.write(b);
+        System.out.println("MSg sent!");
     }
 
 }
