@@ -25,7 +25,7 @@ public class Server implements Closeable {
     InputStream is;
     static Server instance;
     private ArrayList<RemoteClient> clients;
-    ArrayList<String> packets;
+    volatile ArrayList<Object> packets;
 
     private Server(int port) throws IOException {
         getConnection(port);
@@ -35,7 +35,7 @@ public class Server implements Closeable {
         instance = this;
         Scanner tsm = new Scanner(System.in);
         System.out.println("What port?");
-        packets = new ArrayList<String>();
+        packets = new ArrayList<Object>();
         getConnection(tsm.nextInt());
         //startProcessing();
 
@@ -101,21 +101,18 @@ public class Server implements Closeable {
         t.setName("ConnectionSearching");
         t.start();
     }
-    public void startProcessing(){
-
-
+    public synchronized void startProcessing(){
         Thread t = new Thread(new Runnable() {
             @Override
             public void run() {
                 while (true) {
-                    try {
-                        Thread.sleep(20);
-                    } catch(InterruptedException e){
-                        e.printStackTrace();
-                    }
+//                    try {
+//                        Thread.sleep(20);
+//                    } catch(InterruptedException e){
+//                        e.printStackTrace();
+//                    }
                     processPackets();
-                }
-            }
+                }            }
         });
         t.setName("ServerProcess");
         t.start();
@@ -123,13 +120,14 @@ public class Server implements Closeable {
 
     private void processPackets(){
                 while (!packets.isEmpty()) {
+
                     System.out.println(packets.get(0));
                     packets.remove(0);
                 }
 
 
     }
-    private ArrayList<String> getPackets(){
+    private ArrayList<Object> getPackets(){
         return packets;
     }
     public void sendFile(String fileName) throws Exception {
