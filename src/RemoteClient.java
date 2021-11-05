@@ -1,7 +1,6 @@
 import java.io.*;
 import java.net.Socket;
 import java.net.SocketException;
-import java.util.PriorityQueue;
 import java.util.UUID;
 
 public class RemoteClient {
@@ -39,6 +38,8 @@ public class RemoteClient {
                 oos.writeObject("%error%Name expected, " + o.getClass() + " got... Disconnecting");
                 s.close();
             }
+            sendObject(id);
+
         } catch (ClassNotFoundException | IOException e){
             e.printStackTrace();
             return null;
@@ -55,16 +56,9 @@ public class RemoteClient {
                     try {
                         Object message = ois.readObject();
                         Server.getInstance().addPacket(message);
-//                        byte[] b = new byte[2000];
-//                        in.read(b);
-//                        String msg =new String(Server.truncate(b));
-//                        msg = "%"+id.toString() +"%" + msg;
-//                        Server.getInstance().addPacket(msg);
                     } catch(SocketException e){
                         running = false;
-                    } catch(IOException e){
-                        e.printStackTrace();
-                    } catch (ClassNotFoundException e){
+                    } catch(IOException | ClassNotFoundException e){
                         e.printStackTrace();
                     }
                 }
@@ -77,6 +71,15 @@ public class RemoteClient {
     @Override
     public String toString(){
         return "RemoteClient[name: " + this.name + ", id: " + id + "]";
+    }
+    public void sendObject(Object o){
+        try {
+            System.out.println(o);
+            oos.writeUnshared(o);
+            oos.reset();
+        } catch(IOException e){
+            e.printStackTrace();
+        }
     }
 
 

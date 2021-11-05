@@ -1,42 +1,52 @@
-import org.jetbrains.annotations.NotNull;
+
 
 import java.io.*;
 import java.net.Socket;
+import java.util.ArrayList;
 import java.util.Scanner;
+import java.util.UUID;
 
 import javax.swing.text.html.HTMLDocument.HTMLReader.HiddenAction;
 
-public class Client {
+public class Client implements Messageable {
     public static void main(String[] args) throws Exception {
-        Scanner sc = new Scanner(System.in);
-        System.out.println("What is the IP?");
-        String addr = sc.nextLine();
-        System.out.println("Whats is the port?");
-        int port = sc.nextInt();
-        Client c = new Client(addr, port);
+//        Scanner sc = new Scanner(System.in);
+//        System.out.println("What is the IP?");
+//        String addr = sc.nextLine();
+//        System.out.println("Whats is the port?");
+//        int port = sc.nextInt();
+//        Client c = new Client(addr, port);
+        Client c = new Client("localhost", 5555);
 
     }
 
     private Socket sr;
     private InputStream is;
     private OutputStream os;
+    ObjectInputStream ois;
     ObjectOutputStream oos;
+    String clientName;
+    UUID clientId;
+    ChatWindow cw;
 
     public Client(String address, int port) throws IOException {
+        clientName = "Josh";
         establishConnection(address, port);
-        sendMessage(new Message("Josh"));
+        sendMessage(new Message(clientName, null));
         startRuntimeChat();
     }
     public void startRuntimeChat()throws IOException{
+        clientId = (UUID)readObject();
+        cw = new ChatWindow(clientName, this, clientId);
         Thread t = new Thread(new Runnable() {
             @Override
             public void run() {
-                System.out.println("Send a message!");
-                Scanner tsm = new Scanner(System.in);
+
                 while(true){
                     try {
-                        sendMessage(tsm.nextLine());
-                    } catch(IOException e){
+                        System.out.println("Listening for data...");
+                        process(ois.readObject());
+                    } catch (IOException | ClassNotFoundException e){
                         e.printStackTrace();
                     }
                 }
@@ -45,12 +55,26 @@ public class Client {
         t.setName("Chat listener");
         t.start();
     }
+    public void process(Object message){
+        if(message instanceof Message){
+            Message m = (Message)message;
 
+            if(m.isTextMessage()){
+                System.out.println("wtf to do with this " + m);
+            } else {
+                if(m.getText().equals("updatedMessages")){
+                    System.out.println("Updated messages: " + m.getObjectMessage());
+                    cw.setMessages((ArrayList<Message>)m.getObjectMessage());
+                }
+            }
+        }
+    }
     public void establishConnection(String address, int port) throws IOException {
         sr = new Socket(address, port);
         is = sr.getInputStream();
         os = sr.getOutputStream();
         oos = new ObjectOutputStream(os);
+        ois = new ObjectInputStream(is);
     }
 
 //    public void sendMessage(String msg) throws IOException {
@@ -61,8 +85,27 @@ public class Client {
 //        System.out.println("MSg sent!");
 //
 //    }
-    public void sendMessage(Object o) throws IOException{
-        oos.writeObject(o);
+
+    public Object readObject(){
+        try{
+            return ois.readObject();
+        } catch (ClassNotFoundException | IOException e){
+            e.printStackTrace();
+        }
+        return null;
     }
+    public void sendObject(Object o)  {
+        try {
+            oos.writeObject(o);
+        } catch (IOException e){
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void sendMessage(Message m) {
+        sendObject(m);
+    }
+
 
 }

@@ -1,17 +1,14 @@
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.ArrayList;
-import java.util.PriorityQueue;
-import java.util.Queue;
-import java.util.Scanner;
+import java.util.*;
 
-public class Server implements Closeable {
+public class Server implements Closeable, Messageable{
 
     private boolean running;
 
     public static void main(String[] args) throws Exception {
-        new Server();
+        new Server(5555);
     }
 
     ServerSocket ss;
@@ -19,34 +16,45 @@ public class Server implements Closeable {
     OutputStream os;
     ObjectInputStream ois;
     InputStream is;
+    ChatWindow cw;
     static Server instance;
+    public static final UUID serverID = UUID.randomUUID();
     private ArrayList<RemoteClient> clients;
     volatile ArrayList<Object> packets;
 
     private Server(int port) throws IOException {
-        getConnection(port);
+
         instance = this;
+        clients = new ArrayList<>();
+        packets = new ArrayList<Object>();
+        startServer(port);
     }
     private Server()throws  IOException{
         instance = this;
         Scanner tsm = new Scanner(System.in);
+        clients = new ArrayList<>();
         System.out.println("What port?");
         packets = new ArrayList<Object>();
-        getConnection(tsm.nextInt());
+
+        startServer(tsm.nextInt());
         //startProcessing();
 
 
         //Server.getInstance().addPacket("starting 40");
-        System.out.println(this);
+        //System.out.println(this);
+    }
+    public void startServer(int port) throws IOException{
+        cw = new ChatWindow("server", this,serverID);
+        startProcessing();
+        getConnection(port);
     }
     public void addPacket(Object p){
         packets.add(p);
-        System.out.println(packets);
+
     }
     public void addClient(RemoteClient c) {
-        if (clients == null)
-            clients = new ArrayList<RemoteClient>();
         clients.add(c);
+        cw.addUserById(c.id,c.name);
     }
     public static Server getInstance(){
         return instance;
@@ -72,7 +80,7 @@ public class Server implements Closeable {
                         System.out.println("accepted");
                         addClient(new RemoteClient(sr));
                         System.out.println(clients.get(clients.size() - 1));
-                        startProcessing();
+
                         packets.add("Starting char");
 
                     } catch (IOException e) {
@@ -80,7 +88,7 @@ public class Server implements Closeable {
                     }
 
                 }
-                System.out.println("Done");
+                //System.out.println("Done");
             }
 
         });
@@ -92,11 +100,6 @@ public class Server implements Closeable {
             @Override
             public void run() {
                 while (true) {
-//                    try {
-//                        Thread.sleep(20);
-//                    } catch(InterruptedException e){
-//                        e.printStackTrace();
-//                    }
                     processPackets();
                 }
             }
@@ -106,8 +109,23 @@ public class Server implements Closeable {
     }
 
     private void processPackets(){
+        //System.out.println("About to check...");
                 while (!packets.isEmpty()) {
-                    System.out.println(packets.get(0));
+                    Object packet = packets.get(0);
+                    if(packet instanceof Message){
+                        Message m = (Message)packet;
+                        if(m.isTextMessage()){
+                            cw.addMessage(m);
+                            //System.out.println(cw.messages);
+                        } else{
+                            if(m.getText().equals("updateMessages")){
+                                sendOutUpdatedMessageList();
+                            }
+                        }
+                        //System.out.println("end of process packets " + m);
+
+                    }
+                    //System.out.println(packet);
                     packets.remove(0);
                 }
 
@@ -116,15 +134,14 @@ public class Server implements Closeable {
     private ArrayList<Object> getPackets(){
         return packets;
     }
-    public void sendFile(String fileName) throws Exception {
-        FileInputStream fr = new FileInputStream(fileName);
-        byte[] b = new byte[(int) new File(fileName).length()];
-        fr.read(b);
-        os.write(b, 0, b.length);
-        //fr.close();
 
+    public void sendOutUpdatedMessageList(){
+
+        for(RemoteClient c: clients){
+            System.out.println("Sending message(" + cw.messages + ") to " + cw.getNameById(c.id));
+            c.sendObject(new Message(cw.messages, serverID, "updatedMessages"));
+        }
     }
-
     public static byte[] truncate(byte[] og) {
         int finalIndex = 0;
         for (int i = 0; i < og.length; i++) {
@@ -135,9 +152,14 @@ public class Server implements Closeable {
         }
 
         byte[] res = new byte[finalIndex];
-        for (int i = 0; i < finalIndex; i++) {
-            res[i] = og[i];
-        }
+        System.arraycopy(og, 0, res, 0, finalIndex);
         return res;
     }
+
+    @Override
+    public void sendMessage(Message m) {
+        addPacket(m);
+    }
+
+
 }
