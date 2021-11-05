@@ -1,7 +1,6 @@
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import org.jetbrains.annotations.NotNull;
+
+import java.io.*;
 import java.net.Socket;
 import java.util.Scanner;
 
@@ -21,6 +20,7 @@ public class Client {
     private Socket sr;
     private InputStream is;
     private OutputStream os;
+    ObjectOutputStream oos;
 
     public Client(String address, int port) throws IOException {
         establishConnection(address, port);
@@ -46,11 +46,11 @@ public class Client {
         t.start();
     }
 
-    public boolean establishConnection(String address, int port) throws IOException {
+    public void establishConnection(String address, int port) throws IOException {
         sr = new Socket(address, port);
         is = sr.getInputStream();
         os = sr.getOutputStream();
-        return true;
+        oos = new ObjectOutputStream(os);
     }
 
     public void sendMessage(String msg) throws IOException {
@@ -60,6 +60,9 @@ public class Client {
         System.out.println("Message sent!");
         System.out.println("MSg sent!");
 
+    }
+    public void sendMessage(Object o) throws IOException{
+        oos.writeObject(o);
     }
 
 }
