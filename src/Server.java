@@ -1,9 +1,4 @@
-import java.io.Closeable;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
@@ -22,6 +17,7 @@ public class Server implements Closeable {
     ServerSocket ss;
     Socket sr;
     OutputStream os;
+    ObjectInputStream ois;
     InputStream is;
     static Server instance;
     private ArrayList<RemoteClient> clients;
@@ -40,10 +36,10 @@ public class Server implements Closeable {
         //startProcessing();
 
 
-        Server.getInstance().addPacket("starting 40");
+        //Server.getInstance().addPacket("starting 40");
         System.out.println(this);
     }
-    public void addPacket(String p){
+    public void addPacket(Object p){
         packets.add(p);
         System.out.println(packets);
     }
@@ -53,13 +49,6 @@ public class Server implements Closeable {
         clients.add(c);
     }
     public static Server getInstance(){
-//        if(instance == null){
-//            try {
-//                instance = new Server();
-//            } catch(IOException e){
-//                e.printStackTrace();
-//            }
-//        }
         return instance;
     }
     @Override
@@ -81,10 +70,7 @@ public class Server implements Closeable {
                     try {
                         sr = ss.accept();
                         System.out.println("accepted");
-                        byte[] b = new byte[1000];
-                        sr.getInputStream().read(b, 0, b.length);
-                        String name = new String(truncate(b));
-                        addClient(new RemoteClient(name, sr));
+                        addClient(new RemoteClient(sr));
                         System.out.println(clients.get(clients.size() - 1));
                         startProcessing();
                         packets.add("Starting char");
@@ -112,7 +98,8 @@ public class Server implements Closeable {
 //                        e.printStackTrace();
 //                    }
                     processPackets();
-                }            }
+                }
+            }
         });
         t.setName("ServerProcess");
         t.start();
@@ -120,7 +107,6 @@ public class Server implements Closeable {
 
     private void processPackets(){
                 while (!packets.isEmpty()) {
-
                     System.out.println(packets.get(0));
                     packets.remove(0);
                 }

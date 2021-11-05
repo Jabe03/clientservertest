@@ -24,7 +24,7 @@ public class Client {
 
     public Client(String address, int port) throws IOException {
         establishConnection(address, port);
-        sendMessage("Josh");
+        sendMessage(new Message("Josh"));
         startRuntimeChat();
     }
     public void startRuntimeChat()throws IOException{
@@ -53,14 +53,14 @@ public class Client {
         oos = new ObjectOutputStream(os);
     }
 
-    public void sendMessage(String msg) throws IOException {
-
-        byte[] b = msg.getBytes();
-        os.write(b);
-        System.out.println("Message sent!");
-        System.out.println("MSg sent!");
-
-    }
+//    public void sendMessage(String msg) throws IOException {
+//
+//        byte[] b = msg.getBytes();
+//        os.write(b);
+//        System.out.println("Message sent!");
+//        System.out.println("MSg sent!");
+//
+//    }
     public void sendMessage(Object o) throws IOException{
         oos.writeObject(o);
     }
