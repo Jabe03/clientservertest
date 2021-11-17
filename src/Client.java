@@ -3,6 +3,7 @@
 import java.io.*;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Scanner;
 import java.util.UUID;
 
@@ -16,7 +17,7 @@ public class Client implements Messageable {
 //        System.out.println("Whats is the port?");
 //        int port = sc.nextInt();
 //        Client c = new Client(addr, port);
-        Client c = new Client("localhost", 5555);
+        Client c = new Client("108.160.228.94", 5656);
 
     }
 
@@ -30,7 +31,9 @@ public class Client implements Messageable {
     ChatWindow cw;
 
     public Client(String address, int port) throws IOException {
-        clientName = "Josh";
+        Scanner sc = new Scanner(System.in);
+        clientName = sc.nextLine();
+        sc.close();
         establishConnection(address, port);
         sendMessage(new Message(clientName, null));
         startRuntimeChat();
@@ -47,7 +50,8 @@ public class Client implements Messageable {
                         System.out.println("Listening for data...");
                         process(ois.readObject());
                     } catch (IOException | ClassNotFoundException e){
-                        e.printStackTrace();
+                        System.out.println("Lost connection to server");
+                        System.exit(1);
                     }
                 }
             }
@@ -65,6 +69,8 @@ public class Client implements Messageable {
                 if(m.getText().equals("updatedMessages")){
                     System.out.println("Updated messages: " + m.getObjectMessage());
                     cw.setMessages((ArrayList<Message>)m.getObjectMessage());
+                } else if (m.getText().equals("updatedClients")){
+                    cw.setParticipants((HashMap<UUID, String>)m.getObjectMessage());
                 }
             }
         }

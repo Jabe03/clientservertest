@@ -14,21 +14,22 @@ public class Server implements Closeable, Messageable{
     ServerSocket ss;
     Socket sr;
     OutputStream os;
-    ObjectInputStream ois;
-    InputStream is;
+    //ObjectInputStream ois;
+    //InputStream is;
     ChatWindow cw;
     static Server instance;
     public static final UUID serverID = UUID.randomUUID();
-    private ArrayList<RemoteClient> clients;
+    final private ArrayList<RemoteClient> clients;
     volatile ArrayList<Object> packets;
 
     private Server(int port) throws IOException {
 
         instance = this;
         clients = new ArrayList<>();
-        packets = new ArrayList<Object>();
+        packets = new ArrayList<>();
         startServer(port);
     }
+    /*
     private Server()throws  IOException{
         instance = this;
         Scanner tsm = new Scanner(System.in);
@@ -43,6 +44,7 @@ public class Server implements Closeable, Messageable{
         //Server.getInstance().addPacket("starting 40");
         //System.out.println(this);
     }
+    */
     public void startServer(int port) throws IOException{
         cw = new ChatWindow("server", this,serverID);
         startProcessing();
@@ -70,38 +72,29 @@ public class Server implements Closeable, Messageable{
         //System.out.println("running");
         ss = new ServerSocket(port);
         running = true;
-        Thread t = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                //System.out.println("RUNning");
-                while (running) {
-                    try {
-                        sr = ss.accept();
-                        System.out.println("accepted");
-                        addClient(new RemoteClient(sr));
-                        System.out.println(clients.get(clients.size() - 1));
-
-                        packets.add("Starting char");
-
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-
+        Thread t = new Thread(() -> {
+            while (running) {
+                try {
+                    sr = ss.accept();
+                    System.out.println("accepted");
+                    addClient(new RemoteClient(sr));
+                    System.out.println(clients.get(clients.size() - 1));
+                    packets.add("Starting char");
+                    updateClients();
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
-                //System.out.println("Done");
-            }
 
+            }
+            //System.out.println("Done");
         });
         t.setName("ConnectionSearching");
         t.start();
     }
     public synchronized void startProcessing(){
-        Thread t = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                while (true) {
-                    processPackets();
-                }
+        Thread t = new Thread(() -> {
+            while (true) {
+                processPackets();
             }
         });
         t.setName("ServerProcess");
@@ -112,14 +105,23 @@ public class Server implements Closeable, Messageable{
         //System.out.println("About to check...");
                 while (!packets.isEmpty()) {
                     Object packet = packets.get(0);
-                    if(packet instanceof Message){
-                        Message m = (Message)packet;
+                    if(packet instanceof Message m){
                         if(m.isTextMessage()){
-                            cw.addMessage(m);
-                            //System.out.println(cw.messages);
+                            switch(m.getText()){
+                                case "leaving":
+                                    cw.addMessage(new Message(m.getID(), serverID, "userLeft"));
+                                    break;
+                                default:
+                                    cw.addMessage(m);
+                            }
+
                         } else{
-                            if(m.getText().equals("updateMessages")){
-                                sendOutUpdatedMessageList();
+                            switch(m.getText()) {
+                                case "updateMessages":
+                                    sendOutUpdatedMessageList();
+                                    break;
+                                default:
+                                    cw.addMessage(new Message("serverMessage", serverID, "Unknown command: " + m.getText()));
                             }
                         }
                         //System.out.println("end of process packets " + m);
@@ -131,10 +133,18 @@ public class Server implements Closeable, Messageable{
 
 
     }
+    /*
     private ArrayList<Object> getPackets(){
         return packets;
     }
-
+    
+     */
+    public void updateClients(){
+        for(RemoteClient c: clients){
+            System.out.println("Sending message(" + cw.messages + ") to " + cw.getNameById(c.id));
+            c.sendObject(new Message(cw.getParticipants(), serverID, "updatedClients"));
+        }
+    }
     public void sendOutUpdatedMessageList(){
 
         for(RemoteClient c: clients){
@@ -142,6 +152,7 @@ public class Server implements Closeable, Messageable{
             c.sendObject(new Message(cw.messages, serverID, "updatedMessages"));
         }
     }
+    /*
     public static byte[] truncate(byte[] og) {
         int finalIndex = 0;
         for (int i = 0; i < og.length; i++) {
@@ -151,10 +162,14 @@ public class Server implements Closeable, Messageable{
             }
         }
 
+
+
         byte[] res = new byte[finalIndex];
         System.arraycopy(og, 0, res, 0, finalIndex);
         return res;
     }
+
+     */
 
     @Override
     public void sendMessage(Message m) {

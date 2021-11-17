@@ -2,10 +2,7 @@
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
+import java.awt.event.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Scanner;
@@ -61,13 +58,23 @@ public class ChatWindow implements KeyListener{
 
     }
 
+    public HashMap<UUID, String> getParticipants() {
+        return names;
+    }
+
     private void initFrame() {
         this.frame = new JFrame();
         this.frame.setPreferredSize(new Dimension(600, 600));
         this.frame.setSize(new Dimension(600, 600));
         this.frame.setName(this.username.charAt(this.username.length() - 1) == 's' ? this.username + "'" : this.username + "'s");
         System.out.println(this.frame.getName());
-        this.frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        this.frame.addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosed(WindowEvent e) {
+                sendMessageToHost("leaving");
+                System.exit(1);
+            }
+        });
         //this.frame.addKeyListener(this);
         this.frame.requestFocus();
         this.initPanel();
@@ -158,4 +165,9 @@ public class ChatWindow implements KeyListener{
             }
         }
     }
+
+    public void setParticipants(HashMap<UUID, String> newNames) {
+        names = newNames;
+    }
+
 }
