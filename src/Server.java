@@ -8,7 +8,7 @@ public class Server implements Closeable, Messageable{
     private boolean running;
 
     public static void main(String[] args) throws Exception {
-        new Server(5555);
+        new Server(4444);
     }
 
     ServerSocket ss;

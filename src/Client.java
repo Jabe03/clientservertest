@@ -31,6 +31,7 @@ public class Client implements Messageable {
     ChatWindow cw;
 
     public Client(String address, int port) throws IOException {
+        System.out.println("What is your name?");
         Scanner sc = new Scanner(System.in);
         clientName = sc.nextLine();
         sc.close();
