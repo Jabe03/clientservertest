@@ -17,7 +17,7 @@ public class Client implements Host {
 //        System.out.println("Whats is the port?");
 //        int port = sc.nextInt();
 //        Client c = new Client(addr, port);
-        Client c = new Client("172.17.24.229", 5555);
+        Client c = new Client("172.17.9.67", 5555);
 
     }
 
@@ -38,7 +38,7 @@ public class Client implements Host {
         } catch(InterruptedException e){
 
         }//remove this
-        clientName = "Josh";
+        clientName = sc.nextLine();
         sc.close();
         establishConnection(address, port);
         sendMessage(new Message(clientName, null));
