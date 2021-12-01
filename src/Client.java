@@ -9,7 +9,7 @@ import java.util.UUID;
 
 import javax.swing.text.html.HTMLDocument.HTMLReader.HiddenAction;
 
-public class Client implements Messageable {
+public class Client implements Host {
     public static void main(String[] args) throws Exception {
 //        Scanner sc = new Scanner(System.in);
 //        System.out.println("What is the IP?");
@@ -17,7 +17,7 @@ public class Client implements Messageable {
 //        System.out.println("Whats is the port?");
 //        int port = sc.nextInt();
 //        Client c = new Client(addr, port);
-        Client c = new Client("108.160.228.94", 5656);
+        Client c = new Client("172.17.24.229", 5555);
 
     }
 
@@ -33,7 +33,12 @@ public class Client implements Messageable {
     public Client(String address, int port) throws IOException {
         System.out.println("What is your name?");
         Scanner sc = new Scanner(System.in);
-        clientName = sc.nextLine();
+        try{
+            Thread.sleep(1000);
+        } catch(InterruptedException e){
+
+        }//remove this
+        clientName = "Josh";
         sc.close();
         establishConnection(address, port);
         sendMessage(new Message(clientName, null));
@@ -41,6 +46,7 @@ public class Client implements Messageable {
     }
     public void startRuntimeChat()throws IOException{
         clientId = (UUID)readObject();
+        System.out.println(clientId);
         cw = new ChatWindow(clientName, this, clientId);
         Thread t = new Thread(new Runnable() {
             @Override
@@ -48,7 +54,7 @@ public class Client implements Messageable {
 
                 while(true){
                     try {
-                        System.out.println("Listening for data...");
+                        //System.out.println("Listening for data...");
                         process(ois.readObject());
                     } catch (IOException | ClassNotFoundException e){
                         System.out.println("Lost connection to server");
@@ -68,7 +74,7 @@ public class Client implements Messageable {
                 System.out.println("wtf to do with this " + m);
             } else {
                 if(m.getText().equals("updatedMessages")){
-                    System.out.println("Updated messages: " + m.getObjectMessage());
+                    //System.out.println("Updated messages: " + m.getObjectMessage());
                     cw.setMessages((ArrayList<Message>)m.getObjectMessage());
                 } else if (m.getText().equals("updatedClients")){
                     cw.setParticipants((HashMap<UUID, String>)m.getObjectMessage());
@@ -108,7 +114,12 @@ public class Client implements Messageable {
             e.printStackTrace();
         }
     }
-
+    @Override
+    public void disconnect(){
+        System.out.println("sending ID on disconnect as:" + this.clientId);
+        //sendMessage(new Message("", this.clientId, "userLeaving1"));
+        System.out.println("I have left");
+    }
     @Override
     public void sendMessage(Message m) {
         sendObject(m);

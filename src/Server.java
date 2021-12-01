@@ -3,7 +3,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.*;
 
-public class Server implements Closeable, Messageable{
+public class Server implements Closeable, Host{
 
     private boolean running;
 
@@ -78,7 +78,6 @@ public class Server implements Closeable, Messageable{
                     sr = ss.accept();
                     System.out.println("accepted");
                     addClient(new RemoteClient(sr));
-                    System.out.println(clients.get(clients.size() - 1));
                     packets.add("Starting char");
                     updateClients();
                 } catch (IOException e) {
@@ -108,9 +107,6 @@ public class Server implements Closeable, Messageable{
                     if(packet instanceof Message m){
                         if(m.isTextMessage()){
                             switch(m.getText()){
-                                case "leaving":
-                                    cw.addMessage(new Message(m.getID(), serverID, "userLeft"));
-                                    break;
                                 default:
                                     cw.addMessage(m);
                             }
@@ -119,6 +115,11 @@ public class Server implements Closeable, Messageable{
                             switch(m.getText()) {
                                 case "updateMessages":
                                     sendOutUpdatedMessageList();
+                                    break;
+                                case "userLeaving1":
+                                    System.out.println("Server sees mID as: " + m.getID());
+                                    cw.addMessage(new Message(m.getID(), serverID, m.getText()));
+
                                     break;
                                 default:
                                     cw.addMessage(new Message("serverMessage", serverID, "Unknown command: " + m.getText()));
@@ -141,14 +142,14 @@ public class Server implements Closeable, Messageable{
      */
     public void updateClients(){
         for(RemoteClient c: clients){
-            System.out.println("Sending message(" + cw.messages + ") to " + cw.getNameById(c.id));
+            //System.out.println("Sending message(" + cw.messages + ") to " + cw.getNameById(c.id));
             c.sendObject(new Message(cw.getParticipants(), serverID, "updatedClients"));
         }
     }
     public void sendOutUpdatedMessageList(){
 
         for(RemoteClient c: clients){
-            System.out.println("Sending message(" + cw.messages + ") to " + cw.getNameById(c.id));
+            //System.out.println("Sending message(" + cw.messages + ") to " + cw.getNameById(c.id));
             c.sendObject(new Message(cw.messages, serverID, "updatedMessages"));
         }
     }
@@ -175,6 +176,9 @@ public class Server implements Closeable, Messageable{
     public void sendMessage(Message m) {
         addPacket(m);
     }
+    @Override
+    public void disconnect(){
 
+    }
 
 }
