@@ -17,8 +17,8 @@ public class Server implements Closeable, Host{
     //ObjectInputStream ois;
     //InputStream is;
     ChatWindow cw;
-    static Server instance;
-    public static final UUID serverID = UUID.randomUUID();
+    private static Server instance;
+    private static final UUID serverID = UUID.randomUUID();
     final private ArrayList<RemoteClient> clients;
     volatile ArrayList<Object> packets;
 
@@ -54,6 +54,12 @@ public class Server implements Closeable, Host{
         packets.add(p);
 
     }
+    public static boolean isServerId(UUID id){
+        if(id.equals(instance.serverID)){
+            return true;
+        }
+        return false;
+    }
     public void addClient(RemoteClient c) {
         clients.add(c);
         cw.addUserById(c.id,c.name);
@@ -76,7 +82,7 @@ public class Server implements Closeable, Host{
             while (running) {
                 try {
                     sr = ss.accept();
-                    System.out.println("accepted");
+                    //System.out.println("accepted");
                     addClient(new RemoteClient(sr));
                     packets.add("Starting char");
                     updateClients();
@@ -104,6 +110,7 @@ public class Server implements Closeable, Host{
         //System.out.println("About to check...");
                 while (!packets.isEmpty()) {
                     Object packet = packets.get(0);
+                    System.out.println("\u001B[34mPacket received! " + packet + "\u001B[0m");
                     if(packet instanceof Message m){
                         if(m.isTextMessage()){
                             switch(m.getText()){
@@ -116,12 +123,16 @@ public class Server implements Closeable, Host{
                                 case "updateMessages":
                                     sendOutUpdatedMessageList();
                                     break;
-                                case "userLeaving1":
-                                    System.out.println("Server sees mID as: " + m.getID());
+                                case "userJoining":
+                                case "userLeaving":
+                                    //System.out.println("toCW ID has ID: " + m.getObjectMessage() + " ... should have id:" + m.getID());
+                                    //System.out.println("sending joining or leaving message to chatWindow: " + toCW);
+
                                     cw.addMessage(new Message(m.getID(), serverID, m.getText()));
 
                                     break;
                                 default:
+
                                     cw.addMessage(new Message("serverMessage", serverID, "Unknown command: " + m.getText()));
                             }
                         }
@@ -179,6 +190,9 @@ public class Server implements Closeable, Host{
     @Override
     public void disconnect(){
 
+    }
+    public void stop(){
+        System.exit(1);
     }
 
 }

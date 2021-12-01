@@ -24,6 +24,7 @@ public class ChatWindow implements KeyListener{
     private static final Color textColor = new Color(200, 200, 200);
     private static final Color accent1 = new Color(0, 104, 122);
     private static final Color accent2 = new Color(34, 78, 117);
+    private static final Color accent3 = new Color(14, 119, 59);
     private static final Color backgroundColor = new Color(25, 28, 38);
     private static final Color statusMessageColor = new Color(252, 255, 105);
     public static void main(String[] args){
@@ -34,6 +35,7 @@ public class ChatWindow implements KeyListener{
 
        openTerminalForInputs(cw);
     }
+    @Deprecated
     private static void openTerminalForInputs(ChatWindow cw){
         UUID id = UUID.randomUUID();
         cw.addUserById(id, "Josh");
@@ -74,7 +76,7 @@ public class ChatWindow implements KeyListener{
             public void windowClosing(WindowEvent e) {
                 System.out.println("disconnecting");
                 host.disconnect();
-                super.windowClosed(e);
+                host.stop();
             }
         });
         //this.frame.addKeyListener(this);
@@ -90,7 +92,11 @@ public class ChatWindow implements KeyListener{
                 for(Message m : ChatWindow.this.messages) {
                     yCursor = ChatWindow.this.paintMessage(m, g, yCursor);
                 }
-
+                g.setColor(accent3);
+                int usernameLength = g.getFontMetrics().stringWidth(username);
+                g.fillRoundRect(2, this.getHeight()-32, usernameLength+10 , 20, 5, 5);
+                g.setColor(textColor);
+                g.drawString(username, 7, this.getHeight()-22);
             }
         };
 
@@ -113,7 +119,11 @@ public class ChatWindow implements KeyListener{
     }
     private int paintMessage(Message m, Graphics g, int yCursor){
         if(m.isTextMessage()){
-            yCursor = drawTextMessage(m,g,yCursor);
+            if(Server.isServerId(m.getID())){
+                yCursor = drawStatusMessage(m,g,yCursor);
+            } else {
+                yCursor = drawTextMessage(m, g, yCursor);
+            }
         } else{
             switch(m.getText()){
                 case "serverMessage":
@@ -122,34 +132,35 @@ public class ChatWindow implements KeyListener{
                     yCursor = drawStatusMessage(m,g,yCursor);
                     break;
                 default:
-                    System.out.println("(123)Unknown command:");
+                    System.out.println("(123)Unknown command: " + m.getText());
             }
         }
         return yCursor;
     }
     public int drawStatusMessage(Message m, Graphics g, int yCursor ){
+        yCursor+=2;
         g.setColor(statusMessageColor);
         String messageText = generateStatusMessage(m);
         g.drawString(messageText, leftBorder, yCursor + 5);
-        yCursor+= 10;
+        yCursor+= 12;
         return yCursor;
 
     }
     public String generateStatusMessage(Message m){
-        System.out.println(m);
-        switch(m.getText()){
-            case "serverMessage":
-                return "server: " + m.getObjectMessage();
-            case "userJoining":
-                System.out.println(m.getID());
-                return names.get(m.getID()) + " has joined.";
-            case "userLeaving":
-                System.out.println("(146) user leaving has Name and ID: " + names.get(m.getID()) + ", "+ m.getObjectMessage());
-                System.out.println(names);
-                return names.get(m.getObjectMessage()) + " has left.";
-            default:
-                return "unknown server command";
+        //System.out.println(m);
+        if(Server.isServerId(m.getID()) && m.isTextMessage()){
+            return "Server: " + m.getText();
         }
+        return switch (m.getText()) {
+            case "userJoining" ->
+                    //System.out.println(m.getID());
+                    names.get(m.getObjectMessage()) + " has joined.";
+            case "userLeaving" ->
+                    //System.out.println("(146) user leaving has Name and ID: " + names.get(m.getID()) + ", "+ m.getObjectMessage());
+                    //System.out.println(names);
+                    names.get(m.getObjectMessage()) + " has left.";
+            default -> "unknown server command";
+        };
     }
     private int drawTextMessage(Message m, Graphics g, int yCursor){
         String senderName = names.get(m.getID());
@@ -169,11 +180,11 @@ public class ChatWindow implements KeyListener{
     }
 
     public void addMessage(Message m){
-        System.out.println("cw recieved massage: " + m);
+        //System.out.println("cw recieved massage: " + m);
         messages.add(m);
         sendMessageToHost("updateMessages");
         panel.repaint();
-        System.out.println(messages);
+        //System.out.println(messages);
     }
     public void setMessages(ArrayList<Message> messages){
         this.messages = messages;

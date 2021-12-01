@@ -74,7 +74,7 @@ public class RemoteClient {
     }
     public void sendObject(Object o){
         try {
-            System.out.println(o);
+            //System.out.println(o);
             oos.writeUnshared(o);
             oos.reset();
         } catch(IOException e){

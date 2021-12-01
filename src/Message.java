@@ -16,6 +16,7 @@ public class Message implements Serializable {
     public Message(Object msg, UUID id, String command){
         this.objectMessage = msg;
         this.text = command;
+        this.id = id;
         isTextMessage = false;
     }
     public Message(String text){
@@ -35,9 +36,9 @@ public class Message implements Serializable {
 
     public String toString(){
         if(isTextMessage){
-            return "[Message]:" + text;
+            return "[Message:" + text + ", ID: " + id + "]";
         }
-        return "[Message]: Object:" + this.objectMessage + ", command: " + this.text;
+        return "[Message: Object:" + this.objectMessage + ", command: " + this.text + ", ID: " + id + "]";
     }
 
 

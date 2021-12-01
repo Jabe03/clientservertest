@@ -17,7 +17,7 @@ public class Client implements Host {
 //        System.out.println("Whats is the port?");
 //        int port = sc.nextInt();
 //        Client c = new Client(addr, port);
-        Client c = new Client("172.17.9.67", 5555);
+        Client c = new Client("172.17.9.67", 4444);
 
     }
 
@@ -48,6 +48,8 @@ public class Client implements Host {
         clientId = (UUID)readObject();
         System.out.println(clientId);
         cw = new ChatWindow(clientName, this, clientId);
+        //System.out.println("Sending joining message with id: " + clientId);
+        sendMessage(new Message("", this.clientId, "userJoining"));
         Thread t = new Thread(new Runnable() {
             @Override
             public void run() {
@@ -114,10 +116,13 @@ public class Client implements Host {
             e.printStackTrace();
         }
     }
+    public void stop(){
+        System.exit(1);
+    }
     @Override
     public void disconnect(){
         System.out.println("sending ID on disconnect as:" + this.clientId);
-        //sendMessage(new Message("", this.clientId, "userLeaving1"));
+        sendMessage(new Message("", this.clientId, "userLeaving"));
         System.out.println("I have left");
     }
     @Override
