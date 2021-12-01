@@ -148,10 +148,12 @@ public class ChatWindow implements KeyListener{
     }
     public String generateStatusMessage(Message m){
         //System.out.println(m);
-        if(Server.isServerId(m.getID()) && m.isTextMessage()){
-            return "Server: " + m.getText();
-        }
+//        if(Server.isServerId(m.getID()) && m.isTextMessage()){
+//            return "Server: " + m.getText();
+//        }
         return switch (m.getText()) {
+            case "serverMessage" ->
+                    "server: " + m.getObjectMessage();
             case "userJoining" ->
                     //System.out.println(m.getID());
                     names.get(m.getObjectMessage()) + " has joined.";
@@ -162,6 +164,7 @@ public class ChatWindow implements KeyListener{
             default -> "unknown server command";
         };
     }
+
     private int drawTextMessage(Message m, Graphics g, int yCursor){
         String senderName = names.get(m.getID());
         if(senderName == null) senderName = "Unknown user";

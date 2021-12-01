@@ -113,10 +113,12 @@ public class Server implements Closeable, Host{
                     System.out.println("\u001B[34mPacket received! " + packet + "\u001B[0m");
                     if(packet instanceof Message m){
                         if(m.isTextMessage()){
-                            switch(m.getText()){
-                                default:
-                                    cw.addMessage(m);
+                            if(m.getID().equals(serverID)){
+                                cw.addMessage(new Message(m.getText(), serverID, "serverMessage"));
+                            } else {
+                                cw.addMessage(m);
                             }
+
 
                         } else{
                             switch(m.getText()) {
