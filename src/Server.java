@@ -82,7 +82,7 @@ public class Server implements Closeable, Host{
             while (running) {
                 try {
                     sr = ss.accept();
-                    //System.out.println("accepted");
+                    System.out.println("accepted");
                     addClient(new RemoteClient(sr));
                     packets.add("Starting char");
                     updateClients();
@@ -195,6 +195,20 @@ public class Server implements Closeable, Host{
     }
     public void stop(){
         System.exit(1);
+    }
+
+    @Override
+    public boolean hasConnection() {
+        return true;
+    }
+
+    @Override
+    public UUID getConnection(String ip, int port) {
+        return serverID;
+    }
+
+    public void setName(String name){
+        System.out.println("you cannot reset the server's name");
     }
 
 }

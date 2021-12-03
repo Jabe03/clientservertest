@@ -17,8 +17,12 @@ public class ChatWindow implements KeyListener{
     JFrame frame;
     JPanel panel;
     JTextField textField;
-
     private HashMap<UUID, String> names;
+    int state;
+
+    private static final int inputtingUsername = 0;
+    private static final int connectingToAServer = 1;
+    private static final int runtimeChat = 2;
     private static final int messageSpread = 10;
     private static final int leftBorder = 40;
     private static final Color textColor = new Color(200, 200, 200);
@@ -32,20 +36,8 @@ public class ChatWindow implements KeyListener{
         System.out.println("What is your name?");
         ChatWindow cw = new ChatWindow("Josh", null, UUID.randomUUID());
 
+    }
 
-       openTerminalForInputs(cw);
-    }
-    @Deprecated
-    private static void openTerminalForInputs(ChatWindow cw){
-        UUID id = UUID.randomUUID();
-        cw.addUserById(id, "Josh");
-        //poopcw.addMessage(new Message("Hello!!!" , id));
-        System.out.println("New user" + cw.names.get(id));
-        while(true) {
-            Scanner tsm = new Scanner(System.in);
-            cw.addMessage(new Message(tsm.nextLine(), id));
-        }
-    }
     public String getNameById(UUID id){
         return names.get(id);
     }
@@ -57,7 +49,20 @@ public class ChatWindow implements KeyListener{
         this.userId = id;
         addUserById(userId,username);
         System.out.println("Username: " + username);
+        checkState();
         initFrame();
+    }
+    public ChatWindow(Host m){
+        this.host = m;
+        messages = new ArrayList<Message>();
+        names = new HashMap<>();
+
+
+//        addUserById(userId,username);
+
+        initFrame();
+        checkState();
+
 
     }
 
@@ -69,14 +74,19 @@ public class ChatWindow implements KeyListener{
         this.frame = new JFrame();
         this.frame.setPreferredSize(new Dimension(600, 600));
         this.frame.setSize(new Dimension(600, 600));
-        this.frame.setName(this.username.charAt(this.username.length() - 1) == 's' ? this.username + "'" : this.username + "'s");
-        System.out.println(this.frame.getName());
+        this.frame.setName("JoshChat");
+
         this.frame.addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {
-                System.out.println("disconnecting");
-                host.disconnect();
-                host.stop();
+
+                if(host.hasConnection()) {
+                    System.out.println("disconnecting");
+                    host.disconnect();
+                    host.stop();
+                } else{
+                    host.stop();
+                }
             }
         });
         //this.frame.addKeyListener(this);
@@ -92,27 +102,65 @@ public class ChatWindow implements KeyListener{
                 for(Message m : ChatWindow.this.messages) {
                     yCursor = ChatWindow.this.paintMessage(m, g, yCursor);
                 }
-                g.setColor(accent3);
-                int usernameLength = g.getFontMetrics().stringWidth(username);
-                g.fillRoundRect(2, this.getHeight()-32, usernameLength+10 , 20, 5, 5);
-                g.setColor(textColor);
-                g.drawString(username, 7, this.getHeight()-22);
+                if(username != null) {
+                    g.setColor(accent3);
+                    int usernameLength = g.getFontMetrics().stringWidth(username);
+                    g.fillRoundRect(2, this.getHeight() - 32, usernameLength + 10, 20, 5, 5);
+                    g.setColor(textColor);
+                    g.drawString(username, 7, this.getHeight() - 22);
+                }
             }
         };
 
 
         this.frame.add(this.panel);
-        textField = new JTextField(frame.getWidth()-30);
+        textField = new JTextField();
         //textField.setBounds(100,100,100,100);
         //textField.setFocusable(false);
         panel.setLayout(new BorderLayout());
         panel.add(textField, BorderLayout.SOUTH);
         textField.addKeyListener(this);
+        this.frame.pack();
         this.frame.setVisible(true);
 
     }
 
+    private void askForUsername(){
+        messages.add(new Message("Username? (type and hit enter)", null, "chatWindowMessage"));
+    }
 
+    private void setUsername(String u){
+        this.username = u;
+        host.setName(u);
+        frame.repaint();
+    }
+    private void checkState(){
+
+        if(username == null){
+            state = inputtingUsername;
+
+
+        } else if(!host.hasConnection()){
+
+            state = connectingToAServer;
+
+
+        }   else {
+            state = runtimeChat;
+        }
+        System.out.println("Current state is: " + state);
+        switch(state){
+            case 0:
+                askForUsername();
+                break;
+            case 1:
+                messages.clear();
+                host.getConnection("192.168.3.153", 4444);
+                checkState();
+                break;
+        }
+
+    }
     public void addUserById(UUID id, String name){
         names.put(id, name);
         System.out.println(names);
@@ -127,6 +175,7 @@ public class ChatWindow implements KeyListener{
         } else{
             switch(m.getText()){
                 case "serverMessage":
+                case "chatWindowMessage":
                 case "userJoining":
                 case "userLeaving":
                     yCursor = drawStatusMessage(m,g,yCursor);
@@ -161,6 +210,8 @@ public class ChatWindow implements KeyListener{
                     //System.out.println("(146) user leaving has Name and ID: " + names.get(m.getID()) + ", "+ m.getObjectMessage());
                     //System.out.println(names);
                     names.get(m.getObjectMessage()) + " has left.";
+            case "chatWindowMessage" ->
+                    (String)m.getObjectMessage();
             default -> "unknown server command";
         };
     }
@@ -204,10 +255,18 @@ public class ChatWindow implements KeyListener{
         int key = e.getKeyCode();
         if(key == KeyEvent.VK_ENTER){
             if(!textField.getText().equals("")) {
-                String text = textField.getText();
-                textField.setText("");
-                sendMessageToHost(text);
+                sendAndClearTextField();
             }
+        }
+    }
+    public void sendAndClearTextField(){
+        String text = textField.getText();
+        textField.setText("");
+        if(state == runtimeChat) {
+            sendMessageToHost(text);
+        } else if (state == inputtingUsername){
+            setUsername(text);
+            checkState();
         }
     }
 

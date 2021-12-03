@@ -17,7 +17,7 @@ public class Client implements Host {
 //        System.out.println("Whats is the port?");
 //        int port = sc.nextInt();
 //        Client c = new Client(addr, port);
-        Client c = new Client("172.17.9.67", 4444);
+        Client c = new Client();
 
     }
 
@@ -30,36 +30,32 @@ public class Client implements Host {
     UUID clientId;
     ChatWindow cw;
 
-    public Client(String address, int port) throws IOException {
-        System.out.println("What is your name?");
-        Scanner sc = new Scanner(System.in);
-        try{
-            Thread.sleep(1000);
-        } catch(InterruptedException e){
-
-        }//remove this
-        clientName = sc.nextLine();
-        sc.close();
-        establishConnection(address, port);
-        sendMessage(new Message(clientName, null));
-        startRuntimeChat();
+    public Client() throws IOException {
+        cw = new ChatWindow(this);
+        //startRuntimeChat();
     }
     public void startRuntimeChat()throws IOException{
-        clientId = (UUID)readObject();
-        System.out.println(clientId);
-        cw = new ChatWindow(clientName, this, clientId);
-        //System.out.println("Sending joining message with id: " + clientId);
-        sendMessage(new Message("", this.clientId, "userJoining"));
+        System.out.println("Starting chat....");
+        sendMessage(new Message(clientName, null));
+        clientId  = (UUID)readObject();
+        cw.userId = clientId;
         Thread t = new Thread(new Runnable() {
             @Override
             public void run() {
 
+
+
+
+                //System.out.println("Sending joining message with id: " + clientId);
+                sendMessage(new Message("", clientId, "userJoining"));
+
                 while(true){
                     try {
                         //System.out.println("Listening for data...");
-                        process(ois.readObject());
+                        Object o = ois.readObject();
+                        process(o);
                     } catch (IOException | ClassNotFoundException e){
-                        System.out.println("Lost connection to server");
+                        e.printStackTrace();
                         System.exit(1);
                     }
                 }
@@ -69,8 +65,7 @@ public class Client implements Host {
         t.start();
     }
     public void process(Object message){
-        if(message instanceof Message){
-            Message m = (Message)message;
+        if(message instanceof Message m){
 
             if(m.isTextMessage()){
                 System.out.println("wtf to do with this " + m);
@@ -82,6 +77,10 @@ public class Client implements Host {
                     cw.setParticipants((HashMap<UUID, String>)m.getObjectMessage());
                 }
             }
+        } else if(message instanceof UUID id ){
+
+            this.clientId = id;
+            System.out.println(id);
         }
     }
     public void establishConnection(String address, int port) throws IOException {
@@ -121,13 +120,42 @@ public class Client implements Host {
     }
     @Override
     public void disconnect(){
-        System.out.println("sending ID on disconnect as:" + this.clientId);
-        sendMessage(new Message("", this.clientId, "userLeaving"));
-        System.out.println("I have left");
+        if(hasConnection()) {
+            System.out.println("sending ID on disconnect as:" + this.clientId);
+            sendMessage(new Message("", this.clientId, "userLeaving"));
+            System.out.println("I have left");
+        }
     }
     @Override
     public void sendMessage(Message m) {
         sendObject(m);
+    }
+
+    @Override
+    public boolean hasConnection(){
+        return sr != null;
+    }
+
+    @Override
+    public UUID getConnection(String ip, int port) {
+        try {
+            establishConnection(ip, port);
+            System.out.println("Connention established");
+        } catch (IOException e){
+            e.printStackTrace();
+            //System.exit(0);
+        }
+
+        try {
+            startRuntimeChat();
+        } catch (IOException e){
+            e.printStackTrace();
+            //System.exit(0);
+        }
+        return clientId;
+    }
+    public void setName(String name){
+        this.clientName = name;
     }
 
 

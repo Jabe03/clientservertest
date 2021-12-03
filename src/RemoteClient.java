@@ -32,8 +32,10 @@ public class RemoteClient {
         String name = null;
         try {
             Object o = ois.readObject();
+            System.out.println("Name object: " + o);
             if (o instanceof Message){
                 name = ((Message) o).getText();
+                System.out.println("Name received: " + name);
             } else {
                 oos.writeObject("%error%Name expected, " + o.getClass() + " got... Disconnecting");
                 s.close();
@@ -72,10 +74,12 @@ public class RemoteClient {
     public String toString(){
         return "RemoteClient[name: " + this.name + ", id: " + id + "]";
     }
-    public void sendObject(Object o){
+    public synchronized void sendObject(Object o){
         try {
-            //System.out.println(o);
+
+            System.out.println("(77)Sending object: " + o);
             oos.writeUnshared(o);
+            System.out.println("Done sending: " + o );
             oos.reset();
         } catch(IOException e){
             e.printStackTrace();
