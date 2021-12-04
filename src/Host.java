@@ -6,6 +6,6 @@ public interface Host {
     public void disconnect();
     public void stop();
     public boolean hasConnection();
-    public UUID getConnection(String ip, int port);
+    public void getConnection(String ip, int port);
     public void setName(String name);
 }

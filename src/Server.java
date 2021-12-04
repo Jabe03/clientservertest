@@ -8,7 +8,7 @@ public class Server implements Closeable, Host{
     private boolean running;
 
     public static void main(String[] args) throws Exception {
-        new Server(4444);
+        new Server(5656);
     }
 
     ServerSocket ss;
@@ -19,7 +19,7 @@ public class Server implements Closeable, Host{
     ChatWindow cw;
     private static Server instance;
     private static final UUID serverID = UUID.randomUUID();
-    final private ArrayList<RemoteClient> clients;
+    final private ArrayList<ClientHandler> clients;
     volatile ArrayList<Object> packets;
 
     private Server(int port) throws IOException {
@@ -47,20 +47,16 @@ public class Server implements Closeable, Host{
     */
     public void startServer(int port) throws IOException{
         cw = new ChatWindow("server", this,serverID);
-        startProcessing();
-        getConnection(port);
+
     }
     public void addPacket(Object p){
         packets.add(p);
 
     }
     public static boolean isServerId(UUID id){
-        if(id.equals(instance.serverID)){
-            return true;
-        }
-        return false;
+        return id.equals(instance.serverID);
     }
-    public void addClient(RemoteClient c) {
+    public void addClient(ClientHandler c) {
         clients.add(c);
         cw.addUserById(c.id,c.name);
     }
@@ -83,7 +79,7 @@ public class Server implements Closeable, Host{
                 try {
                     sr = ss.accept();
                     System.out.println("accepted");
-                    addClient(new RemoteClient(sr));
+                    addClient(new ClientHandler(sr));
                     packets.add("Starting char");
                     updateClients();
                 } catch (IOException e) {
@@ -154,14 +150,14 @@ public class Server implements Closeable, Host{
     
      */
     public void updateClients(){
-        for(RemoteClient c: clients){
+        for(ClientHandler c: clients){
             //System.out.println("Sending message(" + cw.messages + ") to " + cw.getNameById(c.id));
             c.sendObject(new Message(cw.getParticipants(), serverID, "updatedClients"));
         }
     }
     public void sendOutUpdatedMessageList(){
 
-        for(RemoteClient c: clients){
+        for(ClientHandler c: clients){
             //System.out.println("Sending message(" + cw.messages + ") to " + cw.getNameById(c.id));
             c.sendObject(new Message(cw.messages, serverID, "updatedMessages"));
         }
@@ -199,12 +195,17 @@ public class Server implements Closeable, Host{
 
     @Override
     public boolean hasConnection() {
-        return true;
+        return running;
     }
 
     @Override
-    public UUID getConnection(String ip, int port) {
-        return serverID;
+    public void getConnection(String ip, int port) {
+        startProcessing();
+        try {
+            getConnection(port);
+        } catch (IOException e){
+            e.printStackTrace();
+        }
     }
 
     public void setName(String name){

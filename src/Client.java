@@ -137,7 +137,7 @@ public class Client implements Host {
     }
 
     @Override
-    public UUID getConnection(String ip, int port) {
+    public void getConnection(String ip, int port) {
         try {
             establishConnection(ip, port);
             System.out.println("Connention established");
@@ -148,11 +148,10 @@ public class Client implements Host {
 
         try {
             startRuntimeChat();
-        } catch (IOException e){
+        } catch (IOException e) {
             e.printStackTrace();
             //System.exit(0);
         }
-        return clientId;
     }
     public void setName(String name){
         this.clientName = name;

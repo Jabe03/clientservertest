@@ -3,14 +3,14 @@
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Scanner;
 import java.util.UUID;
 
 public class ChatWindow implements KeyListener{
 
-    private Host host;
+    private final Host host;
     volatile ArrayList<Message> messages;
     String username;
     UUID userId;
@@ -18,11 +18,25 @@ public class ChatWindow implements KeyListener{
     JPanel panel;
     JTextField textField;
     private HashMap<UUID, String> names;
+    String ip;
+    Integer port;
+
+
     int state;
 
     private static final int inputtingUsername = 0;
     private static final int connectingToAServer = 1;
     private static final int runtimeChat = 2;
+    private static final int inputtingServerAddress = 3;
+
+    int currentDataInput;
+
+    private static final int gettingUsername = 0;
+    private static final int gettingIP = 1;
+    private static final int gettingPassword = 2;
+    private static final int sendingMessage = 3;
+    private static final int gettingPort = 4;
+
     private static final int messageSpread = 10;
     private static final int leftBorder = 40;
     private static final Color textColor = new Color(200, 200, 200);
@@ -31,6 +45,8 @@ public class ChatWindow implements KeyListener{
     private static final Color accent3 = new Color(14, 119, 59);
     private static final Color backgroundColor = new Color(25, 28, 38);
     private static final Color statusMessageColor = new Color(252, 255, 105);
+
+
     public static void main(String[] args){
         //Scanner tsm = new Scanner(System.in);
         System.out.println("What is your name?");
@@ -38,23 +54,24 @@ public class ChatWindow implements KeyListener{
 
     }
 
-    public String getNameById(UUID id){
-        return names.get(id);
-    }
+//    public String getNameById(UUID id){
+//        return names.get(id);
+//    }
     public ChatWindow(String username, Host m, UUID id){
         this.host = m;
-        messages = new ArrayList<Message>();
+        messages = new ArrayList<>();
         names = new HashMap<>();
         this.username = username;
         this.userId = id;
         addUserById(userId,username);
         System.out.println("Username: " + username);
-        checkState();
+        ip = "unused";
         initFrame();
+        checkState();
     }
     public ChatWindow(Host m){
         this.host = m;
-        messages = new ArrayList<Message>();
+        messages = new ArrayList<>();
         names = new HashMap<>();
 
 
@@ -83,10 +100,8 @@ public class ChatWindow implements KeyListener{
                 if(host.hasConnection()) {
                     System.out.println("disconnecting");
                     host.disconnect();
-                    host.stop();
-                } else{
-                    host.stop();
                 }
+                host.stop();
             }
         });
         //this.frame.addKeyListener(this);
@@ -115,8 +130,6 @@ public class ChatWindow implements KeyListener{
 
         this.frame.add(this.panel);
         textField = new JTextField();
-        //textField.setBounds(100,100,100,100);
-        //textField.setFocusable(false);
         panel.setLayout(new BorderLayout());
         panel.add(textField, BorderLayout.SOUTH);
         textField.addKeyListener(this);
@@ -127,38 +140,88 @@ public class ChatWindow implements KeyListener{
 
     private void askForUsername(){
         messages.add(new Message("Username? (type and hit enter)", null, "chatWindowMessage"));
+        currentDataInput = gettingUsername;
+    }
+    private void askForIP(){
+        messages.add(new Message("IP of server?? (type and hit enter)", null, "chatWindowMessage"));
+        currentDataInput = gettingIP;
+
+    }
+    private void askForPort(){
+        System.out.println("Asking for port....");
+        messages.add(new Message("Port of server?? (hit enter for default port(5656))", null, "chatWindowMessage"));
+        currentDataInput = gettingPort;
     }
 
     private void setUsername(String u){
         this.username = u;
         host.setName(u);
         frame.repaint();
+        checkState();
+    }
+    private void setIP(String ip){
+        System.out.println("SetIP called!");
+        this.ip = ip;
+        checkState();
+    }
+    private void setPort(String port){
+        if(port.equals("")){
+            this.port = 5656;
+            checkState();
+            return;
+        }
+        try{
+            this.port = Integer.parseInt(port);
+        } catch (NumberFormatException e){
+            messages.add(new Message("Invalid port, enter again", null, "chatWindowMessage"));
+            frame.repaint();
+            return;
+        }
+        checkState();
+
+    }
+    private void setPassword(String pw){
+        //TODO implement this sometime
     }
     private void checkState(){
 
         if(username == null){
             state = inputtingUsername;
-
-
         } else if(!host.hasConnection()){
-
-            state = connectingToAServer;
-
-
-        }   else {
+            if(port == null || ip == null){
+                state = inputtingServerAddress;
+            } else{
+                state = connectingToAServer;
+            }
+        }   else{
             state = runtimeChat;
         }
         System.out.println("Current state is: " + state);
+
         switch(state){
-            case 0:
+            case inputtingUsername:
                 askForUsername();
                 break;
-            case 1:
+            case connectingToAServer:
                 messages.clear();
-                host.getConnection("192.168.3.153", 4444);
+                host.getConnection(ip, port);
                 checkState();
                 break;
+            case inputtingServerAddress:
+                System.out.println("Current IP is: " + ip + ", port: " + port);
+                if(ip == null) {
+                    askForIP();
+                }
+                else if(port == null) {
+                    askForPort();
+                }
+                break;
+            case runtimeChat:
+                currentDataInput = sendingMessage;
+                break;
         }
+        frame.repaint();
+        System.out.println("Current data input is" + currentDataInput);
 
     }
     public void addUserById(UUID id, String name){
@@ -254,7 +317,7 @@ public class ChatWindow implements KeyListener{
     public void keyPressed(KeyEvent e) {
         int key = e.getKeyCode();
         if(key == KeyEvent.VK_ENTER){
-            if(!textField.getText().equals("")) {
+            if(!textField.getText().equals("") || currentDataInput==gettingPort) {
                 sendAndClearTextField();
             }
         }
@@ -262,14 +325,19 @@ public class ChatWindow implements KeyListener{
     public void sendAndClearTextField(){
         String text = textField.getText();
         textField.setText("");
-        if(state == runtimeChat) {
-            sendMessageToHost(text);
-        } else if (state == inputtingUsername){
-            setUsername(text);
-            checkState();
-        }
+        sendTextFieldData(text);
     }
+    private void sendTextFieldData(String data){
+        switch(currentDataInput){
+            case sendingMessage -> sendMessageToHost(data);
+            case gettingUsername -> setUsername(data);
+            case gettingIP -> setIP(data);
+            case gettingPort -> setPort(data);
+            case gettingPassword -> setPassword(data);
+            default -> System.out.println("\u001B[31mWTF!?!?!??!?!?!?");
+        }
 
+    }
     @Override
     public void keyReleased(KeyEvent e) {
 
